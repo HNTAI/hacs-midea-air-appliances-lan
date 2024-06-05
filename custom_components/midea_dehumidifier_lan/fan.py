@@ -4,7 +4,7 @@ import logging
 from typing import Any, Final
 
 from homeassistant.components.fan import (
-    SUPPORT_PRESET_MODE,
+    FanEntityFeature,
     FanEntity,
 )
 from homeassistant.config_entries import ConfigEntry
@@ -31,7 +31,7 @@ PRESET_MODES_3: Final = [MODE_LOW, MODE_HIGH]
 PRESET_MODES_2: Final = [MODE_AUTO]
 
 _FAN_SPEEDS = {2: PRESET_MODES_2, 3: PRESET_MODES_3, 7: PRESET_MODES_7}
-_ON_SPEED = {2: MODE_AUTO, 3: MODE_MEDIUM, 7: MODE_HIGH}
+_ON_SPEED = {2: MODE_AUTO, 3: MODE_HIGH, 7: MODE_HIGH}
 
 
 async def async_setup_entry(
@@ -52,7 +52,7 @@ async def async_setup_entry(
 class DehumidiferFan(ApplianceEntity, FanEntity):
     """Entity for managing dehumidifer fan"""
 
-    _attr_supported_features = SUPPORT_PRESET_MODE
+    _attr_supported_features = FanEntityFeature.PRESET_MODE
     _attr_preset_modes = PRESET_MODES_7
     _attr_speed_count = len(PRESET_MODES_7)
     _name_suffix = " Fan"
@@ -78,7 +78,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         supports = self.dehumidifier().capabilities
         fan_capability = supports.get("fan_speed", 0)
         self._attr_preset_modes = _FAN_SPEEDS.get(fan_capability, PRESET_MODES_7)
-        self._on_speed = _ON_SPEED.get(fan_capability, MODE_MEDIUM)
+        self._on_speed = _ON_SPEED.get(fan_capability, MODE_HIGH)
         self._attr_speed_count = len(self._attr_preset_modes)
         return super().on_online(update)
 
@@ -96,7 +96,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
         speed = self._fan_speeds.get(preset_mode, None)
-        _LOGGER.warning("Setting speed to %s", speed)
+        _LOGGER.debug("Setting speed to %s", speed)
         if speed is not None:
             self.apply(ATTR_FAN_SPEED, speed)
         else:
@@ -104,7 +104,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
 
     def set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
-        _LOGGER.warning("Setting percentage to %s", percentage)
+        _LOGGER.debug("Setting percentage to %s", percentage)
 
         self.apply(ATTR_FAN_SPEED, percentage)
 
@@ -126,7 +126,7 @@ class DehumidiferFan(ApplianceEntity, FanEntity):
         if speed is not None:
             self.set_speed(speed)
             updated = True
-        _LOGGER.warning("turn_on %s %s", self._attr_percentage, updated)
+        # _LOGGER.debug("turn_on percentage=%s was_updated=%s", self._attr_percentage, updated)
         if (
             not updated
             and (self._attr_percentage or 0) < self._fan_speeds[self._on_speed]
